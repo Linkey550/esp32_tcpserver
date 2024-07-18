@@ -18,7 +18,8 @@ const char *password = "woaiwuxie1";
 uint16_t serverPort = 12222;         //服务器端口号
 
 
-WiFiServer server; //声明一个客户端对象，用于与服务器进行连接
+WiFiServer server(8888); //声明一个客户端对象，用于与服务器进行连接
+WiFiClient serverClients[MAX_SRV_CLIENTS];
 
 
 // put function declarations here:
@@ -78,7 +79,7 @@ void setup() {
 
   
 
-  server.begin(serverPort); //服务器启动监听端口号12222
+  server.begin(); //服务器启动监听端口号12222
   server.setNoDelay(true);
 
 
@@ -110,9 +111,12 @@ void Task_Receive(void *pvParameters)
    {
 
           uint8_t i;
+          char inputString[20] = {};
+          //Serial.print("Task_Receive run\n ");
           //检测服务器端是否有活动的客户端连接
           if (server.hasClient())
           {
+            Serial.print("hasClien\n ");
             for(i = 0; i < MAX_SRV_CLIENTS; i++)
             {
               //查找空闲或者断开连接的客户端，并置为可用
@@ -132,16 +136,25 @@ void Task_Receive(void *pvParameters)
           //检查客户端的数据
           for(i = 0; i < MAX_SRV_CLIENTS; i++)
           {
+            //Serial.print(serverClients[i].connected());
             if (serverClients[i] && serverClients[i].connected())
             {
               if(serverClients[i].available())
               {
                 //从Telnet客户端获取数据，并推送到URAT端口
-                while(serverClients[i].available()) {
-                  Serial.println(serverClients[i].read());
+                // while(serverClients[i].available()) {
+                //   inputString=serverClients[i].read();
+                //   Serial.println(inputString);
+                //   vTaskDelay(1);
+                // }
+                bzero(inputString, 20); 
+                for(int j=0;serverClients[i].available();j++)
+                {
+                  inputString[j] = serverClients[i].read();
                   vTaskDelay(1);
                 }
-                //vTaskDelay(1);
+                Serial.println(inputString);
+                serverClients[i].println(inputString);
               }
             }
             vTaskDelay(1);
